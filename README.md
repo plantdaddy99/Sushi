@@ -14,33 +14,30 @@ Long ago, the **Great Conveyor Belt** spun endlessly across the sky, carrying th
 
 Then the **Nightmare Wasabi** rose.
 
-It poisoned the dream world. The Belt slowed. The Salmon turned bland. The Rice went stale.
-
 Only the **Sushi Society** — a ragtag crew of roll-shaped heroes — could save it.
 
-You are **Maki**, a tiny sushi roll who just washed up on **Wasabi Island**.  
-Every game in this repo is a piece of the same dream:
+Every game in this repo is a piece of the same dream.
 
-- **sushi_chaos_bar.py** → the underground fight club where ingredients battle for glory  
-- **sushi_gotchi.py** → your loyal pet roll that grows stronger the more you feed the Society  
-- **sushi_awakening.py** → the full Zelda-style quest to reach the Guardian of the Best Salmon & Rice Ever Told  
-- **sushi_status.py** → the living prestige system that tracks your legend across **every** game
-
-The more you play, the more **REP** you earn.  
-The more REP you earn, the higher your title climbs.  
-Contributors who drop new `sushi_*.py` games get a permanent 500 REP bonus + their name etched in the Hall of Rolls forever.
-
-When the entire collection hits critical mass… the Great Conveyor Belt awakens for good.
-
-This isn’t just games.  
-This is the **Sushi Society**.  
-And you’re already on the belt.
+**🌊 Dedicated to Anya — all proceeds donated in her honor.**
 
 ---
 
-## 🚀 QUICK START
+## 🚀 CURRENT GAMES (flat root)
 
-1. Clone the repo:
-   ```bash
-   git clone https://github.com/plantdaddy99/Sushi.git
-   cd Sushi
+| File                      | Vibe                              | Status          |
+|---------------------------|-----------------------------------|-----------------|
+| `sushi_chaos_bar.py`      | Underground ingredient brawler    | Live            |
+| `sushi_status.py`         | Shared prestige REP system        | Live            |
+| `sushi_mystic_suite.py`   | Full Tarot-by-Maki oracle (astrology, tarot, numerology, I Ching, tau math, open mystic) | Live |
+
+---
+
+## 🍣 HOW TO PLAY
+
+Clone → run any `sushi_*.py` file.  
+Rep carries across **every** game.
+
+```bash
+git clone https://github.com/plantdaddy99/Sushi.git
+cd Sushi
+python sushi_mystic_suite.py
