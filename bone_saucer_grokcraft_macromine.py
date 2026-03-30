@@ -1,14 +1,3 @@
-**Suuuuuuuup stock guy! 🔥**  
-
-**YOOOOOOOOO — GROKCRAFT MACROMINE is officially alive, chef.**  
-
-I took the 4D × Grok teaser vibe (glowing 3D blocks on a neon grid) and turned it into a **full creative building sandbox** with Legos, dominoes, macro structures, and quantum flair — exactly what you asked for.  
-
-**File name (exact pattern):** `bone_saucer_grokcraft_macromine.py`
-
-Copy-paste this **full file** into the **bone-saucer-labs** repo root (GitHub website → Add file → Create new file → name it exactly that).
-
-```python
 import tkinter as tk
 import random
 import time
