@@ -1,0 +1,304 @@
+
+import pygame
+import random
+import sys
+
+# Initialize Pygame
+pygame.init()
+pygame.font.init()
+
+# Screen settings
+WIDTH, HEIGHT = 1280, 720
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
+pygame.display.set_caption("CYBER BEAT RAIN — $DING/$KID RAINBOW RECONNECT")
+clock = pygame.time.Clock()
+
+# Font (monospace Matrix style)
+FONT_SIZE = 18
+font = pygame.font.SysFont("courier", FONT_SIZE, bold=True)
+input_font = pygame.font.SysFont("courier", 28, bold=True)
+
+# Colors for ROYGBIV rainbow pattern (cycled per letter)
+ROYGBIV = [
+    (255, 0, 0),      # R
+    (255, 127, 0),    # O
+    (255, 255, 0),    # Y
+    (0, 255, 0),      # G
+    (0, 255, 255),    # B
+    (75, 0, 130),     # I
+    (148, 0, 211)     # V
+]
+
+# $DING/$KID themed word pool (short, punchy crypto slang + coin names)
+WORD_POOL = ["DING", "KID", "DINGO", "MOON", "HODL", "PUMP", "WAGMI", "DIAMOND", "RAIN", "BEAT", "CYBER", "KIDCOIN", "DINGCOIN"]
+
+class MatrixStream:
+    """Core rain stream (faint binary BG + main binary + code + normal RGB)"""
+    def __init__(self, x, layer_type):
+        self.x = x
+        self.y = random.randint(-HEIGHT * 2, 0)
+        self.speed = random.uniform(2.0, 5.0)
+        self.length = random.randint(15, 30)
+        self.layer_type = layer_type
+        self.chars = []
+        self.reset_chars()
+
+    def reset_chars(self):
+        if self.layer_type in ('faint_binary', 'binary'):
+            self.chars = [random.choice(['0', '1']) for _ in range(self.length)]
+        elif self.layer_type == 'code':
+            code_set = "0123456789ABCDEF{}[]()<>=!@#$%^&*+-/\\|;:'\",.?アィゥェォカキクケコ"
+            self.chars = [random.choice(code_set) for _ in range(self.length)]
+        else:  # rgb sparkle
+            self.chars = [random.choice(["#", "0x", "◆", "◇", "RGB"]) for _ in range(self.length)]
+
+    def update(self):
+        self.y += self.speed
+        if self.y > HEIGHT + 200:
+            self.y = random.randint(-HEIGHT * 2, -100)
+            self.speed = random.uniform(2.0, 5.0)
+            if random.random() < 0.25:
+                self.reset_chars()
+
+    def draw(self, surface):
+        for i, char in enumerate(self.chars):
+            y_pos = self.y - i * FONT_SIZE
+            if self.layer_type == 'faint_binary':
+                color = (0, min(80, 15 + i * 3), 20)
+                alpha = max(10, 55 - i * 3)
+            elif self.layer_type == 'binary':
+                color = (0, min(255, 80 + i * 8), 40)
+                alpha = max(40, 255 - i * 8)
+            elif self.layer_type == 'code':
+                color = (80, 220, 160)
+                alpha = max(30, 255 - i * 8)
+            else:
+                hue = (pygame.time.get_ticks() // 8 + self.x // 2 + i * 10) % 360
+                c = pygame.Color(0)
+                c.hsva = (hue, 100, 100, 100)
+                color = (c.r, c.g, c.b)
+                alpha = max(60, 220 - i * 7)
+                if random.random() < 0.18:
+                    sparkle = font.render(char, True, (255, 255, 255))
+                    sparkle.set_alpha(120)
+                    surface.blit(sparkle, (self.x + random.randint(-3, 3), y_pos + random.randint(-3, 3)))
+
+            text = font.render(char, True, color)
+            text.set_alpha(alpha)
+            surface.blit(text, (self.x, y_pos))
+
+
+class RainbowLetter:
+    """Special falling rainbow letter for the word reconstruction mechanic"""
+    def __init__(self, char, color, start_x, start_y):
+        self.char = char
+        self.color = color
+        self.x = start_x + random.randint(-40, 40)
+        self.y = start_y
+        self.speed = random.uniform(3.5, 6.5)
+        self.angle = random.uniform(-8, 8)  # slight wobble
+        self.connected = False
+
+    def update(self):
+        self.y += self.speed
+        self.speed = min(self.speed + 0.05, 9.0)  # accelerate a bit
+
+    def draw(self, surface):
+        if self.connected:
+            return  # hide once connected
+        text = font.render(self.char, True, self.color)
+        text.set_alpha(220)
+        # slight rotation for extra cyber feel
+        rotated = pygame.transform.rotate(text, self.angle)
+        surface.blit(rotated, (self.x - rotated.get_width() // 2, self.y))
+
+
+# === BUILD THE PERMANENT CYBER RAIN BASE ===
+streams = []
+
+# 1. Very faint binary (deep constant underlayer)
+for x in range(0, WIDTH, FONT_SIZE):
+    if random.random() < 0.92:
+        s = MatrixStream(x, 'faint_binary')
+        s.speed = random.uniform(0.6, 1.4)
+        streams.append(s)
+
+# 2. Main moving binary (the beat raining over faint)
+for x in range(0, WIDTH, FONT_SIZE):
+    if random.random() < 0.78:
+        s = MatrixStream(x, 'binary')
+        streams.append(s)
+
+# 3. Code layer
+for x in range(0, WIDTH, FONT_SIZE):
+    if random.random() < 0.58:
+        streams.append(MatrixStream(x, 'code'))
+
+# 4. RGB sparkle layer
+for x in range(0, WIDTH, int(FONT_SIZE * 1.8)):
+    if random.random() < 0.48:
+        s = MatrixStream(x, 'rgb')
+        s.speed *= 1.4
+        streams.append(s)
+
+# Game variables
+current_word = random.choice(WORD_POOL)
+rainbow_letters = []
+score = 0
+payout = 0
+input_text = ""
+game_state = "playing"  # playing, won, howlbox
+win_timer = 0
+
+def spawn_rainbow_word():
+    """Spawn the current word's letters scattered in rainbow colors"""
+    global rainbow_letters
+    rainbow_letters = []
+    letter_spacing = WIDTH // (len(current_word) + 2)
+    for i, char in enumerate(current_word):
+        color = ROYGBIV[i % len(ROYGBIV)]
+        start_x = letter_spacing * (i + 1) + random.randint(-80, 80)
+        start_y = random.randint(-HEIGHT * 2, -HEIGHT // 2)
+        rainbow_letters.append(RainbowLetter(char, color, start_x, start_y))
+
+spawn_rainbow_word()
+
+# Main loop
+running = True
+paused = False
+
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.KEYDOWN:
+            if game_state == "playing":
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+                elif event.key == pygame.K_SPACE:
+                    paused = not paused
+                elif event.key == pygame.K_f:
+                    pygame.display.toggle_fullscreen()
+                elif event.key == pygame.K_r:
+                    # Reset current word
+                    current_word = random.choice(WORD_POOL)
+                    spawn_rainbow_word()
+                elif event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+                    # SUBMIT GUESS → attempt rainbow connection
+                    if input_text.upper() == current_word:
+                        # WIN!
+                        game_state = "won"
+                        win_timer = 120
+                        payout = len(current_word) * 100 + score * 10  # simple $DING payout
+                        score += payout
+                        # Connect the rainbow letters
+                        for letter in rainbow_letters:
+                            letter.connected = True
+                    else:
+                        # Wrong guess - slight penalty flash
+                        input_text = ""
+                elif event.key == pygame.K_BACKSPACE:
+                    input_text = input_text[:-1]
+                else:
+                    # Accept numbers + special chars too
+                    if event.unicode:
+                        input_text += event.unicode.upper()
+
+            elif game_state == "won":
+                if event.key == pygame.K_RETURN:
+                    game_state = "howlbox"  # go to music reward screen
+
+            elif game_state == "howlbox":
+                if event.key == pygame.K_ESCAPE:
+                    # Restart new round
+                    current_word = random.choice(WORD_POOL)
+                    spawn_rainbow_word()
+                    input_text = ""
+                    game_state = "playing"
+
+    if not paused and game_state == "playing":
+        screen.fill((2, 2, 6))
+
+        # Update & draw permanent rain base
+        for stream in streams:
+            stream.update()
+            stream.draw(screen)
+
+        # Update & draw rainbow letters (the actual game)
+        for letter in rainbow_letters:
+            letter.update()
+            letter.draw(screen)
+
+        # Bottom text entry bar
+        bar_y = HEIGHT - 80
+        pygame.draw.rect(screen, (0, 20, 40), (50, bar_y, WIDTH - 100, 60), border_radius=8)
+        pygame.draw.rect(screen, (0, 255, 200), (50, bar_y, WIDTH - 100, 60), 4, border_radius=8)
+
+        # Prompt
+        prompt = input_font.render("TYPE THE RAINBOW WORD →", True, (0, 255, 200))
+        screen.blit(prompt, (70, bar_y + 8))
+
+        # Player input
+        input_surf = input_font.render(input_text, True, (255, 255, 100))
+        screen.blit(input_surf, (70, bar_y + 32))
+
+        # Instructions
+        instr = font.render("ENTER = connect rainbow | R = new word | ESC = quit", True, (80, 80, 120))
+        screen.blit(instr, (WIDTH // 2 - instr.get_width() // 2, HEIGHT - 22))
+
+        # Score / payout preview
+        score_text = font.render(f"$DING SCORE: {score}   NEXT PAYOUT POT: {len(current_word)*100}", True, (255, 215, 0))
+        screen.blit(score_text, (WIDTH - score_text.get_width() - 20, 20))
+
+    elif game_state == "won":
+        # Victory flash
+        win_timer -= 1
+        overlay = pygame.Surface((WIDTH, HEIGHT))
+        overlay.set_alpha(80 if win_timer % 12 < 6 else 30)
+        overlay.fill((0, 255, 120))
+        screen.blit(overlay, (0, 0))
+
+        win_msg = input_font.render(f"RAINBOW CONNECTED! +{payout} $DING", True, (255, 255, 100))
+        screen.blit(win_msg, (WIDTH // 2 - win_msg.get_width() // 2, HEIGHT // 3))
+
+        press_text = font.render("PRESS ENTER FOR HOWLBOX BEAT REWARD", True, (255, 255, 255))
+        screen.blit(press_text, (WIDTH // 2 - press_text.get_width() // 2, HEIGHT // 2 + 60))
+
+        # Keep rain running in background
+        for stream in streams:
+            stream.update()
+            stream.draw(screen)
+
+    elif game_state == "howlbox":
+        # Simple Howlbox beat interface placeholder (post-win music reward)
+        screen.fill((5, 5, 25))
+        title = input_font.render("HOWLBOX BEAT INTERFACE — $DING REWARD UNLOCKED", True, (0, 255, 255))
+        screen.blit(title, (WIDTH // 2 - title.get_width() // 2, 80))
+
+        # Fake note picker
+        notes = ["C", "D", "E", "F", "G", "A", "B", "DING DROP", "KID BASS"]
+        for i, note in enumerate(notes):
+            y = 200 + i * 45
+            color = ROYGBIV[i % len(ROYGBIV)]
+            pygame.draw.rect(screen, color, (WIDTH // 2 - 180, y, 360, 38), border_radius=6)
+            txt = input_font.render(f"PRESS {chr(65 + i)} → PLAY {note}", True, (0, 0, 0))
+            screen.blit(txt, (WIDTH // 2 - txt.get_width() // 2, y + 6))
+
+        exit_txt = font.render("ESC = new round", True, (180, 180, 180))
+        screen.blit(exit_txt, (WIDTH // 2 - exit_txt.get_width() // 2, HEIGHT - 60))
+
+        # Rain still faintly in background for continuity
+        for stream in streams:
+            stream.update()
+            stream.draw(screen)
+
+    if paused and game_state == "playing":
+        pause_text = input_font.render("PAUSED — SPACE to resume", True, (255, 255, 100))
+        screen.blit(pause_text, (WIDTH // 2 - pause_text.get_width() // 2, HEIGHT // 2))
+
+    pygame.display.flip()
+    clock.tick(60)
+
+pygame.quit()
+sys.exit()
